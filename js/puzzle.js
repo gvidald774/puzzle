@@ -1,8 +1,7 @@
-var size = 4; // Esta variable determina el tamaño del puzzle.
-
 window.addEventListener("load", function()
 {
     var img = document.getElementById("imagenPuzzle");
+    var size = parseInt(img.getAttribute("size"));
     var contenido = document.getElementById("contenido");
 
     img.ondblclick = function()
@@ -11,56 +10,61 @@ window.addEventListener("load", function()
         var tabla = creaTablaPuzzle();
         contenido.append(tabla);
         img.style = "display: none";
-
-        var arrayDeImagenes = [];
         
-        let contador = 0;
-        for (let i = 0; i < tabla.rows.length; i++)
+        var arrayDeImagenes = tabla.getElementsByTagName("div");
+
+        arrayDeImagenes = [].slice.call(arrayDeImagenes);
+
+        var celdas = tabla.getElementsByTagName("td");
+
+        var arrayDeImagenesAleatorias = arrayDeImagenes.sort(function(a,b) {
+            return Math.random() - 0.5
+        });
+
+        for (let i = 0; i < celdas.length; i++)
         {
-            for (let j = 0; j < tabla.rows[i].cells.length; j++)
-            {
-                arrayDeImagenes[contador] = tabla.rows[i].cells[j];
-                contador++;
-            }
+            celdas[i].appendChild(arrayDeImagenesAleatorias[i]);
         }
-        
-        organizacionAleatoriaTabla();
-
-        function organizacionAleatoriaTabla()
-        {
-            veces = Math.floor(Math.random()*100);
-
-            for(let i = 0; i < veces; i++)
-            {
-                celda1 = Math.floor(Math.random() * 15);
-                celda2 = Math.floor(Math.random() * 15);
-                intercambio(celda1,celda2);
-            }
-        }
-
-        function intercambio(celda1,celda2)
-        {
-            cell1 = tabla.rows[Math.floor(celda1/size)].cells[Math.floor(celda1%size)];
-            cell2 = tabla.rows[Math.floor(celda2/size)].cells[Math.floor(celda2%size)];
-
-            celdaAuxiliar = cell1;
-            cell1 = cell2;
-            cell2 = celdaAuxiliar;
-
-            tabla.rows[Math.floor(celda2/size)].cells[Math.floor(celda2%size)] = cell1;
-            tabla.rows[Math.floor(celda1/size)].cells[Math.floor(celda1%size)] = cell2;
-        }
-
-        celdas = document.getElementsByTagName("td");
 
         for (let i = 0; i < celdas.length; i++)
         {
             celdas[i].onclick = function()
             {
-                alert("Esta es la celda nº"+i);
+                let hueco = tabla.getElementsByClassName("hueco")[0].parentElement;
+                if (distanciaHueco(hueco,this,size) == 1)
+                {
+                    let auxiliar = hueco.innerHTML;
+                    hueco.innerHTML = this.innerHTML;
+                    this.innerHTML = auxiliar;
+                }
+
+                if(condicionVictoria(celdas))
+                {
+                    victoria(img,tabla);
+                }
             }
         }
 
+    }
+
+    function condicionVictoria(celdas)
+    {
+        let resultado = true;
+        for (let i = 0; i < celdas.length-1; i++)
+        {
+            if (celdas[i].getAttribute("indice") != celdas[i].firstElementChild.getAttribute("indice"))
+            {
+                return false;
+            }
+        }
+        return resultado;
+    }
+
+    function victoria(img,tabla)
+    {
+        alert("Hemos ganao");
+        img.style = "display: inline";
+        tabla.style = "display: none";
     }
 
     function creaTablaPuzzle()
@@ -83,12 +87,23 @@ window.addEventListener("load", function()
                 celda.style.width = (img_width/size)+"px";
                 let posiX = (img_width/size)*(contador%size);
                 let posiY = (img_height/size)*parseInt(contador/size);
-                celda.style.backgroundImage = "url(img/puzzle.jpg)";
-                celda.style.backgroundRepeat = "no-repeat";
-                celda.style.backgroundPositionX = -posiX+"px";
-                celda.style.backgroundPositionY = -posiY+"px";
+                let divContenido = document.createElement("div");
+                divContenido.setAttribute("indice",contador);
+                divContenido.style.backgroundImage = "url(img/puzzle.jpg)";
+                divContenido.style.backgroundRepeat = "no-repeat";
+                divContenido.style.backgroundPositionX = -posiX+"px";
+                divContenido.style.backgroundPositionY = -posiY+"px";
+                divContenido.style.height = (img_height/size)+"px";
+                divContenido.style.width = (img_width/size)+"px";
+                if (i == size-1 && j == size-1)
+                {
+                    divContenido.className = "hueco";
+                    divContenido.style.backgroundImage = "none";
+                }
+                celda.appendChild(divContenido);
                 fila.appendChild(celda);
                 contador++;
+                
             }
             tabla.appendChild(fila);
         }
@@ -96,6 +111,21 @@ window.addEventListener("load", function()
         return tabla;
     }
 
-// Sería lo suyo hacer una función de distancia al hueco una vez averigue cómo hacer eso.
-
 })
+
+function distanciaHueco(celda1,celda2,size)
+{
+    x1 = Math.floor(celda1.getAttribute("indice")%size);
+    x2 = Math.floor(celda2.getAttribute("indice")%size);
+    y1 = Math.floor(celda1.getAttribute("indice")/size);
+    y2 = Math.floor(celda2.getAttribute("indice")/size);
+
+    console.log(celda1+" tiene coordenadas "+x1+" "+y1);
+    console.log(celda2+" tiene coordenadas "+x2+" "+y2);
+
+    distancia = ((x1-x2)**2)+((y1-y2)**2);
+    console.log("Distancia es de "+distancia);
+
+    return distancia;
+
+}
